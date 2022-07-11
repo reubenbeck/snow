@@ -1,0 +1,174 @@
+# -*- coding: utf-8 -*-
+import glob
+import os
+import pandas as pd
+from pathlib import Path
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.colors import ListedColormap
+import xarray as xr
+import numpy as np
+
+path = r'D:/Users/Reuben/Internship/Data'
+
+
+#This finds all the .nc extension files within a folder with all the data
+#recrusive=True means that all subdirectories are also considered.
+files = glob.glob(path + "/**/*.nc", recursive=True)
+
+def get_filename(x):
+    filename = os.path.basename(x)
+    return filename
+
+def get_date(x):
+    date = x.split("-")[0]
+    return date
+
+def list_to_strings(x):
+    return x[0]
+
+
+def get_filenames(path):
+    
+    #This finds all the .nc extension files within a folder with all the data
+    #recrusive=True means that all subdirectories are also considered.
+    files = glob.glob(path + "/**/*.nc", recursive=True)
+    
+    #creates dictionary
+    filenames_dict = {'filenames': files}
+    
+    #creates panda dataframe from dictionary
+    df_filename = pd.DataFrame(filenames_dict)
+    
+    return df_filename
+
+def get_dates(path):
+    
+    files = glob.glob(path + "/**/*.nc", recursive=True)
+    filenames = list(map(lambda x: get_filename(x), files))
+    dates = list(map(lambda x: get_date(x), filenames))
+
+    dates_dict = {'dates': dates}
+
+
+    df = pd.DataFrame(dates_dict)
+
+    #format from Panda Dataframe to a DateTime dataframe so particular dates can 
+    #now be selected. Format '%Y%m%d' translates to the format YYYYMMDD
+    
+    df['dates'] = pd.to_datetime(df['dates'], format='%Y%m%d')
+    
+    return df
+
+def Data_from_month(particular_month, dataframe, files, path):
+    
+    mask = dataframe['dates'].dt.month==particular_month
+    month_index = dataframe[mask].index.values
+    
+    files_with_given_month = files.iloc[month_index]
+    
+    files_list = files_with_given_month.values.tolist()
+    files_string = list(map(lambda x: list_to_strings(x), files_list))
+    
+    return files_string
+
+
+
+def Data_from_range(start_date, end_date, dataframe, path):
+    """
+    From selected start and end date, the Panda Datetime
+    Dataframe will only include the data between these dates.
+
+    Parameters
+    ----------
+    start_date : String
+        Write in the format 'YYYY-MM-DD' and is the day/month has a leading zero (e.g 01) -> write as 1.
+    end_date : String
+        Write in the format 'YYYY-MM-DD' and is the day/month has a leading zero (e.g 01) -> write as 1.
+    dataframe: Panda Dataframe
+        
+
+    Returns
+    -------
+    Panda Dataframe with data from between the two dates.
+
+    """
+    
+    #Only data from between start and end date are shown
+    mask = (dataframe['dates'] > start_date) & (dataframe['dates'] <= end_date)
+    df_date_indexes = dataframe[mask].index.values
+    
+    df_filename = get_filenames(path)
+    
+    files_needed = df_filename.iloc[df_date_indexes]
+    
+    files_needed_list = files_needed.values.tolist()
+
+    files_needed_string_list = list(map(lambda x: list_to_strings(x), files_needed_list))
+    
+    return files_needed_string_list
+
+def create_colourmap():
+    colours_flag_values = cm.get_cmap('binary', 30)
+    colors_snow = cm.get_cmap('Reds', 530)
+    
+    #for the linspace, this corresponds to the length of the colorbars and for the
+    #colors_flag_values ([-30,-20,-10,0]) and colors_snow (0-500mm) to work then the ratio of the two 
+    #color bars have to work. 31 is chosen instead of 30 for the flag colours because if they meet at 0
+    #the colors is shown for snow but it should be where there is no snow.
+    newcolours = np.vstack((colours_flag_values(np.linspace(0,1,31)), colors_snow(np.linspace(0,1,350))))
+    newcmp = ListedColormap(newcolours, name='OrangeBlue')
+    
+    return newcmp
+
+def plot_monthly_values(start_date, end_date, path):
+    
+    dates_dataframe = get_dates(path)
+    files_from_range = Data_from_range(start_date, end_date, dates_dataframe, path)
+    
+    
+    #this try block is to stop the code plotting empty graphs where there was not data
+    try:
+        ds = xr.open_mfdataset(files_from_range)
+    except OSError:
+        pass
+    
+    swe_northernhemisphere = ds.sel(lon=slice(-180,180),lat=slice(20,80))
+        
+    swe_monthly_values = swe_northernhemisphere.swe.resample(time='m').mean()
+    print(ds)
+    swe_colorbar = create_colourmap()
+    degree_sign= u'\N{DEGREE SIGN}'
+    
+    for month_values in swe_monthly_values:
+        date = month_values.coords['time'].dt.strftime('%Y-%m-%d').values
+        month_values.plot.pcolormesh(x='lon', 
+                                          y='lat',
+                                          cmap=swe_colorbar,
+                                          vmin=-30,
+                                          vmax=350,
+                                          figsize=(100,20)
+                                          )
+        
+        #cb = plt.colorbar(fig, cmap=swe_colorbar, extend="both").set_label(label='Snow Water Equivalent (mm)',size=80,weight='bold')
+        #cb.tick_params(labelsize=50)
+        plt.title(date, fontsize=160, fontstyle='italic')
+        plt.xlabel('Longitude' + '(' + degree_sign + ')', fontsize=100)
+        plt.ylabel('Latitude' + '(' + degree_sign + ')', fontsize=100)
+        plt.xticks(fontsize=60)
+        plt.yticks(fontsize=60)
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['font.sans-serif'] = 'DejaVu Sans'
+        plt.rcParams['font.monospace'] = 'Ubuntu Mono'
+        plt.show()
+        
+    return "All Done"
+    
+
+
+
+
+
+
+    
+
