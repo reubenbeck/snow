@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+#%%
+from line_profiler import LineProfiler
 import glob
 import os
 import pandas as pd
@@ -9,6 +11,8 @@ from matplotlib.colors import ListedColormap
 import xarray as xr
 import numpy as np
 
+
+#change this to folder where the data is stored on local/global machine
 path = r'D:/Users/Reuben/Internship/Data'
 
 
@@ -26,7 +30,6 @@ def get_date(x):
 
 def list_to_strings(x):
     return x[0]
-
 
 def get_filenames(path):
     
@@ -71,8 +74,6 @@ def Data_from_month(particular_month, dataframe, files, path):
     files_string = list(map(lambda x: list_to_strings(x), files_list))
     
     return files_string
-
-
 
 def Data_from_range(start_date, end_date, dataframe, path):
     """
@@ -136,7 +137,6 @@ def plot_monthly_values(start_date, end_date, path):
     swe_northernhemisphere = ds.sel(lon=slice(-180,180),lat=slice(20,80))
         
     swe_monthly_values = swe_northernhemisphere.swe.resample(time='m').mean()
-    print(ds)
     swe_colorbar = create_colourmap()
     degree_sign= u'\N{DEGREE SIGN}'
     
@@ -144,7 +144,7 @@ def plot_monthly_values(start_date, end_date, path):
         date = month_values.coords['time'].dt.strftime('%Y-%m-%d').values
         month_values.plot.pcolormesh(x='lon', 
                                           y='lat',
-                                          cmap=swe_colorbar,
+                                        cmap=swe_colorbar,
                                           vmin=-30,
                                           vmax=350,
                                           figsize=(100,20)
@@ -163,12 +163,9 @@ def plot_monthly_values(start_date, end_date, path):
         plt.show()
         
     return "All Done"
-    
 
-
-
-
-
-
-    
-
+lp = LineProfiler()
+lp_wrapper = lp(plot_monthly_values)
+lp_wrapper('1979-1-1', '1979-1-31', path)
+lp.print_stats()
+# %%
