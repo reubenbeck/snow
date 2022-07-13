@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #%%
 #from line_profiler import LineProfiler
+import cartopy
+import cartopy.crs as ccrs
 import glob
 import os
 import pandas as pd
@@ -111,15 +113,15 @@ def Data_from_range(start_date, end_date, dataframe, path):
     return files_needed_string_list
 
 def create_colourmap():
-    colours_flag_values = cm.get_cmap('binary', 30)
-    colors_snow = cm.get_cmap('Reds', 530)
+    colours_flag_values = cm.get_cmap('binary_r', 30)
+    colors_snow = cm.get_cmap('Blues_r', 530)
     
     #for the linspace, this corresponds to the length of the colorbars and for the
     #colors_flag_values ([-30,-20,-10,0]) and colors_snow (0-500mm) to work then the ratio of the two 
     #color bars have to work. 31 is chosen instead of 30 for the flag colours because if they meet at 0
     #the colors is shown for snow but it should be where there is no snow.
-    newcolours = np.vstack((colours_flag_values(np.linspace(0,1,31)), colors_snow(np.linspace(0,1,350))))
-    newcmp = ListedColormap(newcolours, name='OrangeBlue')
+    newcolours = np.vstack((colours_flag_values(np.linspace(0,1,31)), colors_snow(np.linspace(0,1,500))))
+    newcmp = ListedColormap(newcolours, name='BinaryBlue_r')
     
     return newcmp
 
@@ -143,32 +145,37 @@ def plot_values_from_range(start_date, end_date, path):
     
     for month_values in swe_monthly_values:
         date = month_values.coords['time'].dt.strftime('%Y-%m-%d').values
-        month_values.plot.pcolormesh(x='lon', 
+        map_projection = ccrs.Orthographic(0, 90)
+        fig = plt.figure(figsize=(15,10))
+        
+        ax = fig.add_subplot(111, projection=map_projection)
+        #ax.add_feature(cartopy.feature.OCEAN, zorder=0)
+        ax.coastlines()
+        ax.set_global()
+        im = month_values.plot.pcolormesh(x='lon', 
                                           y='lat',
-                                        cmap=swe_colorbar,
+                                          cmap = swe_colorbar,
                                           vmin=-30,
-                                          vmax=350,
-                                          figsize=(100,20)
+                                          vmax=500,
+                                          transform=ccrs.PlateCarree(),
+                                          ax = ax,
+                                          cbar_kwargs={'label': "Snow Water Equivalent (mm)"}
                                           )
-
-        #cb = plt.colorbar(fig, cmap=swe_colorbar, extend="both").set_label(label='Snow Water Equivalent (mm)',size=80,weight='bold')
+        
+        
         #cb.tick_params(labelsize=50)
-        plt.title(date, fontsize=160, fontstyle='italic')
-        plt.xlabel('Longitude' + '(' + degree_sign + ')', fontsize=100)
-        plt.ylabel('Latitude' + '(' + degree_sign + ')', fontsize=100)
-        plt.xticks(fontsize=60)
-        plt.yticks(fontsize=60)
+        ax.set_title(date, fontsize=40, fontstyle='italic')
+        #fig.savefig(str(date)+'.jpg', bbox_inches='tight')
         plt.rcParams['font.family'] = 'sans-serif'
         plt.rcParams['font.sans-serif'] = 'DejaVu Sans'
         plt.rcParams['font.monospace'] = 'Ubuntu Mono'
         #plt.show slows done the code quite a lot
-        #plt.show()
+        plt.show()
         
     return "All Done"
 
 def plot_monthly_values(start_date, end_date, path):
 
-    
     files = get_filenames(path)
     dates = get_dates(path)
     files_from_particular_month = Data_from_month(3,dates, files, path)
@@ -189,18 +196,15 @@ def plot_monthly_values(start_date, end_date, path):
     degree_sign= u'\N{DEGREE SIGN}'
     
     for month_values in swe_monthly_values:
+        ax = plt.axes(projection=ccrs.PlateCarree())
         date = month_values.coords['time'].dt.strftime('%Y-%m-%d').values
-        try:
-            month_values.plot.pcolormesh(x='lon', 
-                                            y='lat',
-                                            cmap=swe_colorbar,
-                                            vmin=-30,
-                                            vmax=500,
-                                            figsize=(100,20)
-                                            )
-        except OSError:
-            pass
-
+        month_values.plot.pcolormesh(x='lon',
+                                        y='lat',
+                                        cmap='Blues_r',
+                                        vmin=-30,
+                                        vmax=500,
+                                        ax = ax
+                                        )
         #cb = plt.colorbar(fig, cmap=swe_colorbar, extend="both").set_label(label='Snow Water Equivalent (mm)',size=80,weight='bold')
         #cb.tick_params(labelsize=50)
         plt.title(date, fontsize=160, fontstyle='italic')
@@ -220,6 +224,6 @@ def plot_monthly_values(start_date, end_date, path):
 #lp_wrapper('1979-1-1', '1979-1-31', path)
 #lp.print_stats()
 
-#plot_values_from_range('1979-1-1','1979-12-31',path)
-plot_monthly_values('1979-1-1','1979-12-31',path)
+plot_values_from_range('1979-3-1','1979-3-31',path)
+#plot_monthly_values('1979-1-1','1979-12-31',path)
 # %%
