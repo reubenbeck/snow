@@ -171,7 +171,6 @@ def plot_monthly_values(start_date, end_date, path):
     
     files = get_filenames(path)
     dates = get_dates(path)
-    dates_dataframe = dataframe_from_range(start_date, end_date, dates, path)
     files_from_particular_month = Data_from_month(3,dates, files, path)
     
     #this try block is to stop the code plotting empty graphs where there was not data
@@ -179,21 +178,28 @@ def plot_monthly_values(start_date, end_date, path):
         ds = xr.open_mfdataset(files_from_particular_month)
     except OSError:
         pass
-    print(ds)
+
     swe_northernhemisphere = ds.sel(lon=slice(-180,180),lat=slice(20,80))
-    swe_monthly_values = swe_northernhemisphere.swe.resample(time='m').mean()
+
+    #change 3 to particular month parameter
+    #time is set to calculate mean for each year because swe_northernhemisphere is xarray dataset
+    #with just all the daily values for a particular month
+    swe_monthly_values = swe_northernhemisphere.swe.resample(time='Y').mean()
     swe_colorbar = create_colourmap()
     degree_sign= u'\N{DEGREE SIGN}'
     
     for month_values in swe_monthly_values:
         date = month_values.coords['time'].dt.strftime('%Y-%m-%d').values
-        month_values.plot.pcolormesh(x='lon', 
-                                          y='lat',
-                                        cmap=swe_colorbar,
-                                          vmin=-30,
-                                          vmax=350,
-                                          figsize=(100,20)
-                                          )
+        try:
+            month_values.plot.pcolormesh(x='lon', 
+                                            y='lat',
+                                            cmap=swe_colorbar,
+                                            vmin=-30,
+                                            vmax=500,
+                                            figsize=(100,20)
+                                            )
+        except OSError:
+            pass
 
         #cb = plt.colorbar(fig, cmap=swe_colorbar, extend="both").set_label(label='Snow Water Equivalent (mm)',size=80,weight='bold')
         #cb.tick_params(labelsize=50)
