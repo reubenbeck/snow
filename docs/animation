@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 #%%
-from line_profiler import LineProfiler
+#from line_profiler import LineProfiler
 import glob
 import os
 import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
 import xarray as xr
@@ -122,7 +123,8 @@ def create_colourmap():
     
     return newcmp
 
-def plot_monthly_values(start_date, end_date, path):
+
+def plot_values_from_range(start_date, end_date, path):
     
     dates_dataframe = get_dates(path)
     files_from_range = Data_from_range(start_date, end_date, dates_dataframe, path)
@@ -135,7 +137,6 @@ def plot_monthly_values(start_date, end_date, path):
         pass
     
     swe_northernhemisphere = ds.sel(lon=slice(-180,180),lat=slice(20,80))
-        
     swe_monthly_values = swe_northernhemisphere.swe.resample(time='m').mean()
     swe_colorbar = create_colourmap()
     degree_sign= u'\N{DEGREE SIGN}'
@@ -149,7 +150,7 @@ def plot_monthly_values(start_date, end_date, path):
                                           vmax=350,
                                           figsize=(100,20)
                                           )
-        
+
         #cb = plt.colorbar(fig, cmap=swe_colorbar, extend="both").set_label(label='Snow Water Equivalent (mm)',size=80,weight='bold')
         #cb.tick_params(labelsize=50)
         plt.title(date, fontsize=160, fontstyle='italic')
@@ -160,12 +161,59 @@ def plot_monthly_values(start_date, end_date, path):
         plt.rcParams['font.family'] = 'sans-serif'
         plt.rcParams['font.sans-serif'] = 'DejaVu Sans'
         plt.rcParams['font.monospace'] = 'Ubuntu Mono'
-        plt.show()
+        #plt.show slows done the code quite a lot
+        #plt.show()
         
     return "All Done"
 
-lp = LineProfiler()
-lp_wrapper = lp(plot_monthly_values)
-lp_wrapper('1979-1-1', '1979-1-31', path)
-lp.print_stats()
+def plot_monthly_values(start_date, end_date, path):
+
+    
+    files = get_filenames(path)
+    dates = get_dates(path)
+    dates_dataframe = dataframe_from_range(start_date, end_date, dates, path)
+    files_from_particular_month = Data_from_month(3,dates, files, path)
+    
+    #this try block is to stop the code plotting empty graphs where there was not data
+    try:
+        ds = xr.open_mfdataset(files_from_particular_month)
+    except OSError:
+        pass
+    print(ds)
+    swe_northernhemisphere = ds.sel(lon=slice(-180,180),lat=slice(20,80))
+    swe_monthly_values = swe_northernhemisphere.swe.resample(time='m').mean()
+    swe_colorbar = create_colourmap()
+    degree_sign= u'\N{DEGREE SIGN}'
+    
+    for month_values in swe_monthly_values:
+        date = month_values.coords['time'].dt.strftime('%Y-%m-%d').values
+        month_values.plot.pcolormesh(x='lon', 
+                                          y='lat',
+                                        cmap=swe_colorbar,
+                                          vmin=-30,
+                                          vmax=350,
+                                          figsize=(100,20)
+                                          )
+
+        #cb = plt.colorbar(fig, cmap=swe_colorbar, extend="both").set_label(label='Snow Water Equivalent (mm)',size=80,weight='bold')
+        #cb.tick_params(labelsize=50)
+        plt.title(date, fontsize=160, fontstyle='italic')
+        plt.xlabel('Longitude' + '(' + degree_sign + ')', fontsize=100)
+        plt.ylabel('Latitude' + '(' + degree_sign + ')', fontsize=100)
+        plt.xticks(fontsize=60)
+        plt.yticks(fontsize=60)
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['font.sans-serif'] = 'DejaVu Sans'
+        plt.rcParams['font.monospace'] = 'Ubuntu Mono'
+        #plt.show slows done the code quite a lot
+        plt.show()
+        
+    return "All Done"
+#lp = LineProfiler()
+#lp_wrapper = lp(plot_monthly_values)
+#lp_wrapper('1979-1-1', '1979-1-31', path)
+#lp.print_stats()
+
+#plot_values_from_range('1979-1-1','1979-12-31',path)
+plot_monthly_values('1979-1-1','1979-12-31',path)
 # %%
