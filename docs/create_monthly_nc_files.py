@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import numpy as np
 import xarray as xr
+import matplotlib.pylab as plt
 
 path = r'D:/Users/Reuben/Internship/Data'
 files = glob.glob(path + "/**/*.nc", recursive=True)
@@ -93,41 +94,26 @@ def Data_from_range(start_date, end_date, dataframe, path, files):
 
 df = get_dates(path, files)
 
-Data_from_range('1979-1-1', '1979-2-28', df, path, files)
-
-#this is needed to create a list with a leading zero: 1 -> 01
 a = np.arange(1,13)
 months =[]
 for num in a:
     months.append((str(num).rjust(2, '0')))
 
-def last_day_of_month(any_day):
-    # The day 28 exists in every month. 4 days later, it's always next month
-    next_month = any_day.replace(day=28) + datetime.timedelta(days=4)
-    # subtracting the number of the current day brings us back one month
-    return next_month - datetime.timedelta(days=next_month.day)
-
-def datetime_to_dates(x):
-    return str(x.date())
-
-
-end_dates = []
-for year in range(1979, 2021):
-    for month in range(1,13):
-        end_dates.append(last_day_of_month(datetime.date(year, month,1)).strftime('%Y-%m-%d'))
-
-
-monthly_data = []
+swe_monthly_values = {}
 for year in range(1979,2021):
-    for month, end_date in zip(months, end_dates):
-        print(str(year) + '-' + str(month) +'-1', end_date)
-        monthly_data.append(Data_from_range(str(year) + '-' + str(month) +'-1', end_date, df, path, files))
+    ds = xr.open_mfdataset(Data_from_range(str(year)+'-3-1', str(year)+'-3-31',df, path, files))
+    swe_values = ds.swe.values
 
-for data in monthly_data:
-    print(data)
-    dataframe = xr.open_mfdataset(data)
-    swe_northernhemisphere = dataframe.sel(lon=slice(-180,180),lat=slice(20,80))
-    swe_monthly_value = swe_northernhemisphere.swe.resample(time='m').mean()
-    swe_monthly_value.to_netcdf()
+    Snow_values_only = swe_values[swe_values>0]
+    mean = Snow_values_only.mean()
+    swe_monthly_values[str(year)]=mean
+
+swe_data = sorted(swe_monthly_values.items())
+
+x, y = zip(*swe_data)
+
+plt.plot(x,y)
+plt.show
+
         
 # %%
