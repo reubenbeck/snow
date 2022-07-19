@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import xarray as xr
 import numpy as np
+import matplotlib.pylab as plt
 
 path = r'D:\\Users\\Reuben\\Internship\\March Monthly Data'
 files = glob.glob(path + "/*.nc")
@@ -118,35 +119,77 @@ def region_hudson_bay_area(ds):
 def eurasia_above_40_lat(ds):
     return ds.sel(lat=slice(40,80),lon=slice(-20,180))
 
+def north_america_above_40_lat(ds):
+    return ds.sel(lat=slice(40,80),lon=slice(-170,-40))
+
 df = get_dates(path, files)
 
-filenames = Data_from_range('1995-1-1','1995-12-12',df, path, files)
+def get_snow_depths(data):
+    #flag values are below 0 (0 is a flag value too). So all snow values are > 0.
+    return data.swe.where(data.swe>0)
 
-#preprocess allows the data to be sliced/manipulated upon opening the files (to reduce memory issues)
-data_1979 = xr.open_mfdataset(filenames, preprocess=eurasia_above_40_lat, parallel=True, chunks={'time':7})
+def get_area(snow_depths):
+
+    #calculates the number of grid cells that are snow_covered over the whole time series
+    #Getting 0 --> nan and 1 --> non_nan value (therefore snow-covered) and then counts all the ones.
+    number_of_grid_cells = np.count_nonzero(~np.isnan(snow_depths))
+    grid_area = 1.11e7
+    
+    return number_of_grid_cells * grid_area
+
+def get_mean(snow_depths):
+    return snow_depths.mean(skipna=True)
+
+def get_snow_mass(mean, total_area):
+
+    #swe is in mm so need to convert to m
+    mean_snow_depth_in_metres = mean/1000
+    volume_of_snow = mean_snow_depth_in_metres * total_area
+
+    #using static density of 240 kgm^-3. Whilst this is not 100% accurate, for long-term climate analysis it is sufficient.
+    #This is defined in Product User uide for this SWE product.
+    mass_of_snow = volume_of_snow * 240
+    mass_in_tonnes = mass_of_snow / 1000
+    mass_in_Gt = mass_in_tonnes * 1e-9
+
+    return mass_in_Gt
+
+march_yearly_snow_masses = {}
+for year in range(1981, 1986):
+
+    filenames = Data_from_range(str(year) + '-1-1', str(year) + '-12-12',df, path, files)
+
+    data = xr.open_mfdataset(filenames, preprocess=region_Siberia, parallel=True, chunks={'time':7})
+
+    snow_depths = get_snow_depths(data)
+
+    total_area = get_area(snow_depths)
+
+    mean_snow_depths = get_mean(snow_depths)
+
+    snow_mass = get_snow_mass(mean_snow_depths, total_area)
+    print(snow_mass.values)
+
+    march_yearly_snow_masses[(str(year))]=snow_mass.values.astype(int)
 
 
-snow_values = data_1979.swe.where(data_1979.swe>0)
-snow_values.plot.hist()
+swe_data = sorted(march_yearly_snow_masses.items())
 
-#calculates the number of grid cells that are snow_covered over the whole time series
-#Getting 0 --> nan and 1 --> non_nan value (therefore snow-covered) and then counts all the ones.
-number_of_grid_cells = np.count_nonzero(~np.isnan(snow_values))
+x, y = zip(*swe_data)
 
-#using spatial resolution in lon and lat at 0.1 degrees = 11.1km
-grid_area = 1.11e7
+fig = plt.figure(figsize=(15,10), edgecolor="Blue")
+ax = fig.add_subplot(111)
 
-total_area = number_of_grid_cells * grid_area
+degree_sign= u'\N{DEGREE SIGN}'
 
+years = np.arange(1981,1986)
 
-mean = snow_values.mean(skipna=True)
-mean_in_metres = mean/1000
-volume_of_snow = total_area * mean_in_metres
+ax.set_title("Northern Hemisphere")
+ax.set_ylabel("Mean March Snow Mass (Gt)")
+ax.set_xlabel("Time (years)")
+plt.xticks(rotation=90)
+plt.plot(x,y, marker='^')
+plt.show
+    
 
-#using static density (from paper) of 240 kgm^-3. Whilst this is not 100% accurate, for long-term climate analysis it is sufficient.
-mass_of_snow = volume_of_snow * 240
-
-mass_in_tonnes = mass_of_snow / 1000
-mass_in_Gt = mass_in_tonnes * 1e-9
-print(mass_in_Gt.values)
 # %%
