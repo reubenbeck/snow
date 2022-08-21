@@ -215,27 +215,6 @@ def Data_from_range(start_date, end_date, path):
 #define the regions named with a lat and lon slice. This is from the Patterns and trends of Northern Hemisphere
 #snow mass from 1980 to 2018 paper 
 
-def region_europe(ds):
-    return ds.sel(lat=slice(50,65), lon=slice(15,35))
-
-def region_east_siberia(ds):
-    return ds.sel(lat=slice(65,73),lon=slice(145,175))
-
-def region_Siberia(ds):
-    return ds.sel(lat=slice(55,70),lon=slice(65,115))
-
-def region_prairie(ds):
-    return ds.sel(lat=slice(40,50),lon=slice(-110,-95))
-
-def region_hudson_bay_area(ds):
-    return ds.sel(lat=slice(50,65),lon=slice(-100,-70))
-
-def eurasia_above_40_lat(ds):
-    return ds.sel(lat=slice(-80,100),lon=slice(-15,180))
-
-def north_america_above_40_lat(ds):
-    return ds.sel(lat=slice(-80,100),lon=slice(-180,-15))
-
 def eurasia(ds):
     min_lon = -10
     min_lat = 40
@@ -258,7 +237,7 @@ def north_america(ds):
 
     return ds.where(mask_lon & mask_lat, drop=True)
 
-def north_hemisphere(ds):
+def northern_hemisphere(ds):
     min_lon = -170
     min_lat = 40
     max_lon = 170
@@ -478,12 +457,6 @@ def get_daily_snow_masses_gt(x):
         return snow_masses_gt.values.item()
 
 
-#create dataframe and dictionary
-panda_dataframe = pd.DataFrame(columns={'year', 'snow mass', 'mean swe', 'total area'})
-march_yearly_snow_masses = {}
-march_daily_snow_masses = {}
-
-
 #the total area for the ease-grid glob snow (721 x 721) with 0.25 degree resolution
 #721 x721 corresponds to
 #lat: 35 degree north to 85 degree
@@ -493,11 +466,110 @@ march_daily_snow_masses = {}
 #using the area_grid forumla and slicing the data as the same for the globsnow data
 #the total area that was given was 1.075677e14
 
+def get_snow_masses(data):
+    """
+    Interpolates for the missing snow values. This is key for the data from the SMMR sensor that is
+    deactivated every other day. Monthly Snow masses are returned.
+
+    Input
+    -----------
+    data: Data Array for the snow. For monthly snow masses to be returned this array needs to only contain one month of data.
+        in this case it will be March
+    
+    Output
+    -----------
+    monthly_snow_mass: March Monthly Snow Mass, given in Gigatonnes.
+    
+    Notes
+    -----------
+    """
+    #accounts for the missing bi-daily data from the smmr satellite
+    swe_daily_values_smmr = data.swe.resample(time='D').asfreq()
+
+    list_of_swe_datarrays = []
+    
+    #this gets the number of days in a given month and then creates
+    #a list of all the Snow water Equivalent Datarrays for each day.
+    for i in range(swe_daily_values_smmr.shape[0]):
+        list_of_swe_datarrays.append(swe_daily_values_smmr[i, :, :])
 
 
-def snow_time_series_annually(start_year, end_year):
+    #uses numpy mapping to apply function: get_daily_snow_masses_gt() to every element of the smmr data arrays
+
+    snow_masses = np.array(list(map(lambda x: get_daily_snow_masses_gt(x), list_of_swe_datarrays)))
+
+    #any snow masses that are missing, mainly due to the bi_daily data from 1979-1988 will be interpolated
+    interp_masses_daily = pd.Series(snow_masses).interpolate(method='linear')
+
+    monthly_snow_mass = interp_masses_daily.mean()
+
+    return monthly_snow_mass
+
+def create_plot(dict_of_snow_masses):
     """
+    Creates a time_series plot of the March Yearly snow masses and includes a 5 year rolling average.
+
+
+    Input
+    -----------
+    dict_of_snow_masses: Dictionary of snow masses. Dictionary is of the form:
+        year: snow mass
+    
+    Output
+    -----------
+    plot: Time Series for March snow mass
+    
+    Notes
+    -----------
     """
+    swe_data_pandas = pd.DataFrame(dict_of_snow_masses)
+
+    #creates 5 year rolling average
+    swe_data_pandas['5 year moving average'] = swe_data_pandas['snow mass'].rolling(5).mean()
+    average_swe = swe_data_pandas['snow mass'].mean()
+    print(swe_data_pandas)
+    print(average_swe)
+
+    fig = plt.figure(figsize=(15,10), edgecolor="Blue")
+    ax = fig.add_subplot(111)
+
+    #plots monthly march snow masses and 5 year rolling average
+    snow_masses = swe_data_pandas.plot(x='year', y='snow mass', kind='scatter', ax = ax)
+    five_year_moving_average = swe_data_pandas.plot(x='year', y='5 year moving average', ax= ax)
+
+    #so the years can be seen clearly
+    plt.xticks(rotation=90)
+    #plt.ylim([500, 1500])
+
+    return 
+        
+
+def snow_time_series_annually(start_year, end_year, region):
+    """
+    Creates a time_series plot of the March Yearly snow masses and includes a 5 year rolling average.
+    Data can be sliced to give a particular region for anaylsis. Includes linear interpolation for any missing data present.
+
+    Input
+    -----------
+    start_year: Starting year for the data to be opened from. (any year between 1979 and 2018)
+
+    End_year: End year for the data to be opened to. (any year between 1979 and 2018.)
+
+    region: selecting region of interest:
+        - eurasia, north_america, northern_hemisphere or ease_grid_globsnow
+        - type None if want all the data to be anaylsed
+    Output
+    -----------
+    plot: Time Series for March snow mass
+    
+    Notes
+    -----------
+    
+    """
+
+    #ceates dictionary for snow masses to be appended to
+    march_yearly_snow_masses = {}
+
     for year in range(start_year, end_year + 1):
 
 
@@ -507,86 +579,16 @@ def snow_time_series_annually(start_year, end_year):
         #opens each file and creates a data array using xarray
         #preproces applies a function to each file before it is saved to the array:
             #in this case the preprocess functions slice the array to consider a region of the northen hemisphere
-        data = xr.open_mfdataset(filenames,preprocess=north_hemisphere,parallel=True, chunks={'time':7})
+        data = xr.open_mfdataset(filenames,preprocess=region,parallel=True, chunks={'time':7})
         march_yearly_snow_masses.setdefault('year', []).append(str(year))
 
-        if 1979 <= year <= 1987:
-            
-            #accounts for the missing bi-daily data from the smmr satellite
-            swe_daily_values_smmr = data.swe.resample(time='D').asfreq()
-
-            list_of_swe_ssmr_datarrays = []
-            
-            #this gets the number of days in a given month and then creates
-            #a list of all the Snow water Equivalent Datarrays for each day.
-            for i in range(swe_daily_values_smmr.shape[0]):
-                list_of_swe_ssmr_datarrays.append(swe_daily_values_smmr[i, :, :])
-        
-
-            #uses numpy mapping to apply function: get_daily_snow_masses_gt() to every element of the smmr data arrays
-
-            snow_masses_smmr = np.array(list(map(lambda x: get_daily_snow_masses_gt(x), list_of_swe_ssmr_datarrays)))
-
-            #in the array, snow_masses_smmr, there are missing values due to bi-daily data from smmr sensor.
-            #method of linear interpolation is used to fill in these values
-            interp_masses = pd.Series(snow_masses_smmr).interpolate(method='linear')
-
-            #values appended to dictionary
-            march_yearly_snow_masses.setdefault('snow mass', []).append(interp_masses.mean())
-            print(interp_masses.mean())
-
-        else:
-            #same process as above for smmr sensory is 
-            swe_daily_values_smmi_smmis = data.swe.resample(time='D').asfreq()
-
-            list_of_swe_smmi_smmis_datarrays =[]
-
-            for i in range(swe_daily_values_smmi_smmis.shape[0]):
-                list_of_swe_smmi_smmis_datarrays.append(swe_daily_values_smmi_smmis[i, :, :])
-            #print(list_of_swe_smmi_smmis_datarrays)
-
-            daily_snow_masses_smmi_smmis = np.array(list(map(lambda x: get_daily_snow_masses_gt(x), list_of_swe_smmi_smmis_datarrays)))
-            monthly_snow_masses_smmi_smmis = daily_snow_masses_smmi_smmis
-            interp_masses = pd.Series(monthly_snow_masses_smmi_smmis).interpolate(method='linear')
-            #print(interp_masses.mean())
-
-            march_yearly_snow_masses.setdefault('snow mass', []).append(interp_masses.mean())
-            print(interp_masses.mean())
-
-
-swe_data_pandas = pd.DataFrame(march_yearly_snow_masses)
-swe_data_pandas['5 year moving average'] = swe_data_pandas['snow mass'].rolling(5).mean()
-average_swe = swe_data_pandas['snow mass'].mean()
-print(swe_data_pandas)
-print(average_swe)
-
-fig = plt.figure(figsize=(15,10), edgecolor="Blue")
-ax = fig.add_subplot(111)
-
-snow_masses = swe_data_pandas.plot(x='year', y='snow mass', kind='scatter', ax = ax)
-five_year_moving_average = swe_data_pandas.plot(x='year', y='5 year moving average', ax= ax)
-
-plt.xticks(rotation=90)
-#plt.ylim([500, 1500])
+        monthly_snow_masses = get_snow_masses(data)
+        march_yearly_snow_masses.setdefault('snow mass', []).append(monthly_snow_masses)
+        print(monthly_snow_masses)
+             
+    create_plot(march_yearly_snow_masses)
     
+    return
 
-# %%
 
-#%%
-EU_area = 4.178e13
-NA_area = 3.071e13
-NH_area = 1.26377028e14
-
-total = EU_area + NA_area
-diff = NH_area - total
-print(total, diff)
-
-EU_mass = 1308
-NA_mass = 882.3
-NH_mass = 2786
-
-total_mass = EU_mass + NA_mass
-diff = NH_mass - total_mass
-
-print(total_mass, diff)
 # %%
