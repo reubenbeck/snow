@@ -192,7 +192,7 @@ def Data_from_range(start_date, end_date, path):
     dates_dataframe = get_dates(path)
     
     #Only data from between start and end date are shown
-    mask = (dates_dataframe['dates'] > start_date) & (dates_dataframe['dates'] <= end_date)
+    mask = (dates_dataframe['dates'] >= start_date) & (dates_dataframe['dates'] <= end_date)
 
     #gets the values for the sliced data
     df_date_indexes = dates_dataframe[mask].index.values
@@ -211,6 +211,7 @@ def Data_from_range(start_date, end_date, path):
     
     return files_needed_string_list
 
+print(Data_from_range('1979-3-1', '1979-3-31', path))
 
 #define the regions named with a lat and lon slice. This is from the Patterns and trends of Northern Hemisphere
 #snow mass from 1980 to 2018 paper 
@@ -575,6 +576,7 @@ def snow_time_series_annually(start_year, end_year, region):
 
         #gets a list of all the filenames
         filenames = Data_from_range(str(year) + '-1-1', str(year) + '-12-12',path)
+        print(filenames)
 
         #opens each file and creates a data array using xarray
         #preproces applies a function to each file before it is saved to the array:
@@ -586,7 +588,7 @@ def snow_time_series_annually(start_year, end_year, region):
         march_yearly_snow_masses.setdefault('snow mass', []).append(monthly_snow_masses)
         print(monthly_snow_masses)
 
-        csv_snow_masses = pd.DataFrame(march_yearly_snow_masses).to_csv('D:\\Users\\Reuben\\Internship\\Northern_hemisphere_snow_masses_gt.csv')
+        #csv_snow_masses = pd.DataFrame(march_yearly_snow_masses).to_csv('D:\\Users\\Reuben\\Internship\\Northern_hemisphere_snow_masses_gt.csv')
              
     create_plot(march_yearly_snow_masses)
     
