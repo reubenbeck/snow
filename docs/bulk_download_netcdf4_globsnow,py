@@ -1,0 +1,89 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Aug 25 00:54:44 2022
+
+@author: Reuben
+"""
+import urllib.request
+import requests 
+import numpy as np
+
+#to get a python array of years from 1979-2020
+years = np.arange(1979,2021)
+
+
+#to get python array of months from 01-12
+#the code below with rjust allows for the leading 0 to be allowed
+#so it is written as 01 not 1
+
+a = np.arange(1,13)
+months =[]
+for num in a:
+    months.append((str(num).rjust(2, '0')))
+
+b = np.arange(1,32)
+days = []
+
+for num in b:
+    days.append((str(num).rjust(2, '0')))
+
+
+def bulk_download(start_year, end_year, start_month, end_month):
+    """
+    Downloads the ESA Snow CCI onto a local machine with the directory of where this python file is located.
+
+    Input
+    ---------
+    start_year: Starting year from which the Snow data will be donwloaded from. Must be between a year 1979 and 2018/2020 (v1.0/v2.0)
+
+    end_year: Ending year from which the Snow data will be downloaded to. Must be between a year 1979 and 2018/2020 (v1.0/v2.0)
+
+    start_month: Starting month from which the Snow data will be downloaded from. Must be a month between 1 and 12.
+
+    end_month: Ending month from the which the Snow data will be downloaded to. Must be a month between 1 and 12.
+
+    Returns:
+    ----------
+    DOnwloads the daily GlobSnow data onto a local machine.
+    
+    Notes
+    -----------
+    Makes sure that the index of all the files is open in a browswer so that the files can be downloaded.
+    """
+
+    
+    #to get a python array of years from 1979-2020
+    years = np.arange(start_year ,end_year + 1)
+
+
+    #to get python array of months from 01-12
+    #the code below with rjust allows for the leading 0 to be allowed
+    #so it is written as 01 not 1
+
+    a = np.arange(start_month , end_month + 1)
+    months =[]
+    for num in a:
+        months.append((str(num).rjust(2, '0')))
+
+    b = np.arange(1,32)
+    days = []
+
+    for num in b:
+        days.append((str(num).rjust(2, '0')))
+
+    for year in years:
+            for month in months:
+                for day in days:
+                    url = 'https://www.globsnow.info/swe/archive_v3.0/L3A_daily_SWE/NetCDF4/' + str(year) + str(month) + str(day) + '_northern_hemisphere_swe_0.25grid.nc'
+                    file_path = 'D:\\Users\\Reuben\\Internship\\GlobSnow_daily_swe\\' + str(year) + str(month) + str(day) + '.nc'
+                    r = requests.get(url, allow_redirects=True, headers={'user-agent': 'MyPC'})
+                    if r.status_code == 404:
+                        continue
+                    
+                    # Download the file from `url` and save it locally under `file_name`:
+                    urllib.request.urlretrieve(url, file_path)
+            
+                
+    return 
+            
+
