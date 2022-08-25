@@ -197,7 +197,7 @@ def Data_from_range(start_date, end_date, path):
     #gets the values for the sliced data
     df_date_indexes = dates_dataframe[mask].index.values
     
-    #retrieves all the filesnames
+    #retrieves all the filenames
     df_filename = get_filenames(path)
     
     #gets only the files wanted from the parameters: start_date, end_date
@@ -567,7 +567,7 @@ def snow_time_series_annually(start_year, end_year, region):
     
     """
 
-    #ceates dictionary for snow masses to be appended to
+    #creates dictionary for snow masses to be appended to
     march_yearly_snow_masses = {}
 
     for year in range(start_year, end_year + 1):
@@ -585,6 +585,8 @@ def snow_time_series_annually(start_year, end_year, region):
         monthly_snow_masses = get_snow_masses(data)
         march_yearly_snow_masses.setdefault('snow mass', []).append(monthly_snow_masses)
         print(monthly_snow_masses)
+
+        csv_snow_masses = pd.DataFrame(march_yearly_snow_masses).to_csv('D:\\Users\\Reuben\\Internship\\Northern_hemisphere_snow_masses_gt.csv')
              
     create_plot(march_yearly_snow_masses)
     

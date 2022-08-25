@@ -1,4 +1,5 @@
 #%%
+import urllib.request
 import requests 
 import numpy as np
 
@@ -67,11 +68,13 @@ def bulk_download(version, start_year, end_year, start_month, end_month):
                     else:
                         url = 'https://dap.ceda.ac.uk/neodc/esacci/snow/data/swe/MERGED/' + str(version) + '/'+ str(year)+'/'+ str(month) +'/' + str(year) + str(month) + str(day) +'-ESACCI-L3C_SNOW-SWE-SMMR-NIMBUS7-fv2.0.nc'
 
-                    
+                    file_path = 'D:\\Users\\Reuben\\Internship\\' + str(year) + str(month) + str(day) + '.nc'
                     r = requests.get(url, allow_redirects=True)
                     if r.status_code == 404:
                         continue
-                    open(url, 'wb').write(r.content)
+
+                    # Download the file from `url` and save it locally under `file_name`:
+                    urllib.request.urlretrieve(url, file_path)
 
     return
     

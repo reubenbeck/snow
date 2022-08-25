@@ -17,12 +17,11 @@ import numpy as np
 
 
 #change this to folder where the data is stored on local/global machine
-path = r'D:\\Users\\Reuben\\Internship\\Snow\\snow\\docs\\ESA snow march v1 daily data'
-
+path = r"D:\\Users\\Reuben\\Internship\\Data_v1"
 
 #This finds all the .nc extension files within a folder with all the data
 #recrusive=True means that all subdirectories are also considered.
-files = glob.glob(path + "/**/*.nc", recursive=True)
+files = glob.glob(path + "\**\*.nc", recursive=True)
 
 def get_filename(x):
     """
@@ -119,7 +118,7 @@ def get_filenames(path):
     
     #This finds all the .nc extension files within a folder with all the data
     #recrusive=True means that all subdirectories are also considered.
-    files = glob.glob(path + "/**/*.nc", recursive=True)
+    files = glob.glob(path + "\**\*.nc", recursive=True)
     
     #creates dictionary
     filenames_dict = {'filenames': files}
@@ -155,7 +154,7 @@ def get_dates(path):
     -----------
     """
     
-    files = glob.glob(path + "/**/*.nc", recursive=True)
+    files = glob.glob(path + "\**\*.nc", recursive=True)
     filenames = list(map(lambda x: get_filename(x), files))
     dates = list(map(lambda x: get_date(x), filenames))
 
@@ -237,6 +236,52 @@ def Data_from_range(start_date, end_date, dataframe, path):
     
     return files_needed_string_list
 
+
+def Data_from_range1(start_date, end_date, path):
+    """
+    From selected start and end date, the Panda Datetime
+    Dataframe will only include the data between these dates.
+
+    Input
+    ----------
+    start_date : String
+        Write in the format 'YYYY-MM-DD' and is the day/month has a leading zero (e.g 01) -> write as 1.
+
+    end_date : String
+        Write in the format 'YYYY-MM-DD' and is the day/month has a leading zero (e.g 01) -> write as 1.
+
+    dataframe: Panda Dataframe of all the dates
+        
+
+    Returns
+    -------
+    Panda Dataframe with data only between the two dates given.
+
+    """
+
+    dates_dataframe = get_dates(path)
+    
+    #Only data from between start and end date are shown
+    mask = (dates_dataframe['dates'] > start_date) & (dates_dataframe['dates'] <= end_date)
+
+    #gets the values for the sliced data
+    df_date_indexes = dates_dataframe[mask].index.values
+    
+    #retrieves all the filenames
+    df_filename = get_filenames(path)
+    
+    #gets only the files wanted from the parameters: start_date, end_date
+    files_needed = df_filename.iloc[df_date_indexes]
+    
+    #From the files wanted, gets the values and then creates a list from their values
+    files_needed_list = files_needed.values.tolist()
+
+    #String format is needed to pass through the function mfdataset (to read all the files)
+    files_needed_string_list = list(map(lambda x: list_to_strings(x), files_needed_list))
+    
+    return files_needed_string_list
+
+
 def create_colourmap():
     """
     A function to create the colorbar for the SWE values. THe colorbar goes from blue to white
@@ -274,7 +319,7 @@ def create_colourmap():
 def plot_values_from_range(start_date, end_date, path):
     
     dates_dataframe = get_dates(path)
-    files_from_range = Data_from_range(start_date, end_date, dates_dataframe, path)
+    files_from_range = Data_from_range1(start_date, end_date, path)
     
     
     #this try block is to stop the code plotting empty graphs where there was not data
@@ -312,8 +357,10 @@ def plot_values_from_range(start_date, end_date, path):
                                         )
     
     
-        ax.set_title(date, fontsize=40, fontstyle='italic')
-        fig.savefig('March Plots\\' + str(date)+'.jpg', bbox_inches='tight')
+        ax.set_title("Northern Hemisphere Monthly SWE", fontsize=40, fontstyle='italic')
+        ax.text(s=date, x=-0, y=4500000, fontsize=30, ha='center')
+        fig.savefig('D:\\Users\\Reuben\\Internship\\Monthly_Plots\\' + str(date)+'.jpg', bbox_inches='tight')
+        #ax.suptitle(date)
         plt.rcParams['font.family'] = 'sans-serif'
         plt.rcParams['font.sans-serif'] = 'DejaVu Sans'
         plt.rcParams['font.monospace'] = 'Ubuntu Mono'
@@ -322,7 +369,7 @@ def plot_values_from_range(start_date, end_date, path):
         
     return "All Done"
 
-plot_values_from_range('1979-1-1','2018-12-31',path)
+#plot_values_from_range('2014-3-1','2018-12-31',path)
 
 
 # %%

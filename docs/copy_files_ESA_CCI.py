@@ -9,9 +9,6 @@ import xarray as xr
 path = r'D:/Users/Reuben/Internship/Data'
 files = glob.glob(path + "/**/*.nc", recursive=True)
 
-path = r'D:/Users/Reuben/Internship/Data'
-
-
 #This finds all the .nc extension files within a folder with all the data
 #recrusive=True means that all subdirectories are also considered.
 files = glob.glob(path + "/**/*.nc", recursive=True)

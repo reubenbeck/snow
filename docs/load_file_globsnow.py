@@ -12,8 +12,6 @@ import rioxarray as rio
 from pyproj import Proj, Transformer
 import cartopy.crs as ccrs
 
-
-
 path = r'D:\\Users\\Reuben\\Internship\\Snow\\snow\\docs\\GlobSnowMarchDailyData'
 files = glob.glob(path + "/*.nc")
 
