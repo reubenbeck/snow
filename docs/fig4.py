@@ -20,16 +20,6 @@ fig.add_trace(go.Scatter(x=df['Year'], y=df['Greenland'], name='Greenland', fill
 fig.add_trace(go.Scatter(x=df['Year'], y=df['Glacier'], name='Glacier', fill='tonexty', line=dict(color="#9033ff")))
 fig.add_trace(go.Scatter(x=df['Year'], y=df['Snow'], name='Snow', fill='tonexty', line=dict(color="#ff3382")))
 
-
-#fig = px.line(df, x=df['Year'], y=df['Snow'])
-#fig.add_scatter(x=df['Year'], y=df['AIS'], name='AIS')
-#fig.add_scatter(x=df['Year'], y=df['Glacier'], name='Glacier')
-#fig.add_scatter(x=df['Year'], y=df['GrIS'], name='GrIS')
-#fig.add_scatter(x=df['Year'], y=df['Ice Shelf Calving'], name='Ice Shelf Calving')
-#fig.add_scatter(x=df['Year'], y=df['NH SeaIce'], name='NH SeaIce')
-#fig.add_scatter(x=df['Year'], y=df['SH SeaIce'], name='SH SeaIce')
-
-
 fig.update_layout(
     title="Global ice mass change between 1994 and 2017",
     xaxis_title="Year",

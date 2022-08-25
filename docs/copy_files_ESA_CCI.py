@@ -56,7 +56,7 @@ def get_dates(path):
     
     return df
 
-def Data_from_month(particular_month, dataframe, files, path):
+def Data_from_month(particular_month, dataframe, path):
     
     mask = dataframe['dates'].dt.month==particular_month
     month_index = dataframe[mask].index.values
@@ -68,13 +68,40 @@ def Data_from_month(particular_month, dataframe, files, path):
     
     return files_string
 
-dataframe = get_dates(path)
 
-fileList = Data_from_month(3, dataframe, files, path)
 
-for item in fileList:
-    filename = os.path.basename(item)
-    copyfile(item, os.path.join("D:\\Users\\Reuben\\Internship\\March Monthly Data", filename))
 
+def copy_files(particular_month, path_data, path_download_to):
+    """
+    From a given month, e.g March, this data will be re-downloaded
+    to another folder. Useful to analyse Snow Data just for a particular month.
+
+    Input
+    ---------
+    particular_month: Integer for the month you would like to download. Jan = 1, Feb = 2 ect.
+
+    path_data: This is the path_ for which all the Snow Data is stored. Make sure to include r in front of the string for the path.
+        E.g: r'D:/Users/Reuben/Internship/Data'
+
+    path_download_to: This path for the directory which you would like the data to be copied to. Make sure it is a String.
+
+    Output
+    ----------
+    filename: filename for a given file
+    
+    Notes
+    -----------
+
+    """
+
+    dataframe = get_dates(path_data)
+
+    fileList = Data_from_month(particular_month, dataframe, path_data)
+
+    for item in fileList:
+        filename = os.path.basename(item)
+        copyfile(item, os.path.join(path_download_to, filename))
+
+    return
 
 # %%

@@ -7,11 +7,11 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 
-df = pd.read_csv('D:\\Users\\Reuben\\Internship\\MonthlySnowMasses.csv')
+df = pd.read_csv("D:\\Users\\Reuben\\Internship\\NorthenHemisphere_monthly_snowmasses_datav1.csv")
 
-df['March_rolling'] = df['March'].rolling(5).mean()
-fig = go.Figure([go.Scatter(x=df['March-year-month'], y=df['March'],mode='markers'), go.Scatter(x=df['March-year-month'], y=df['March_rolling'])])
-fig.show()
+#df['March_rolling'] = df['March'].rolling(5).mean()
+#fig = go.Figure([go.Scatter(x=df['March-year-month'], y=df['March'],mode='markers'), go.Scatter(x=df['March-year-month'], y=df['March_rolling'])])
+#fig.show()
 
 seasonality = df[['year-month', 'snow mass']].copy()
 months = list(reversed([str(i) for i in list(range(1,13))])) + ['12']
@@ -37,6 +37,8 @@ fig.update_layout(polar = dict(radialaxis = dict(visible = True, range=[0, 3700]
                   showlegend=True, width=650, height=650,
                   font = dict(size=14))
 
+fig.show()
+
 pal = list(sns.color_palette(palette='viridis', n_colors=len(years)).as_hex())
 
 
@@ -61,7 +63,6 @@ for snow_mass,p, year in zip(snow_masses_yearly, pal, years):
                              fill='tozeroy'))   #tozeroy 
 
 fig.update_layout(width = 1000, height = 800)
-
 fig.show()
 
 

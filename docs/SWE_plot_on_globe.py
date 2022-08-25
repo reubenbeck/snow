@@ -200,44 +200,8 @@ def Data_from_month(particular_month, date_dataframe, files):
     
     return files_string
 
-def Data_from_range(start_date, end_date, dataframe, path):
-    """
-    From selected start and end date, the Panda Datetime
-    Dataframe will only include the data between these dates.
 
-    Input
-    ----------
-    start_date : String
-        Write in the format 'YYYY-MM-DD' and is the day/month has a leading zero (e.g 01) -> write as 1.
-
-    end_date : String
-        Write in the format 'YYYY-MM-DD' and is the day/month has a leading zero (e.g 01) -> write as 1.
-
-    dataframe: Panda Dataframe of all the dates
-        
-
-    Returns
-    -------
-    Panda Dataframe with data only between the two dates given.
-
-    """
-    
-    #Only data from between start and end date are shown
-    mask = (dataframe['dates'] > start_date) & (dataframe['dates'] <= end_date)
-    df_date_indexes = dataframe[mask].index.values
-    
-    df_filename = get_filenames(path)
-    
-    files_needed = df_filename.iloc[df_date_indexes]
-    
-    files_needed_list = files_needed.values.tolist()
-
-    files_needed_string_list = list(map(lambda x: list_to_strings(x), files_needed_list))
-    
-    return files_needed_string_list
-
-
-def Data_from_range1(start_date, end_date, path):
+def Data_from_range(start_date, end_date, path):
     """
     From selected start and end date, the Panda Datetime
     Dataframe will only include the data between these dates.
@@ -281,6 +245,52 @@ def Data_from_range1(start_date, end_date, path):
     
     return files_needed_string_list
 
+def eurasia(ds):
+    min_lon = -10
+    min_lat = 40
+    max_lon = 170
+    max_lat = 90
+
+    mask_lon = (ds.lon >= min_lon) & (ds.lon <= max_lon)
+    mask_lat = (ds.lat >= min_lat) & (ds.lat <= max_lat)
+
+    return ds.where(mask_lon & mask_lat, drop=True)
+
+def north_america(ds):
+    min_lon = -170
+    min_lat = 40
+    max_lon = -10
+    max_lat = 90
+
+    mask_lon = (ds.lon >= min_lon) & (ds.lon <= max_lon)
+    mask_lat = (ds.lat >= min_lat) & (ds.lat <= max_lat)
+
+    return ds.where(mask_lon & mask_lat, drop=True)
+
+def northern_hemisphere(ds):
+    min_lon = -170
+    min_lat = 40
+    max_lon = 170
+    max_lat = 90
+
+    mask_lon = (ds.lon >= min_lon) & (ds.lon <= max_lon)
+    mask_lat = (ds.lat >= min_lat) & (ds.lat <= max_lat)
+
+    return ds.where(mask_lon & mask_lat, drop=True)
+
+#all the data as sliced by the GlobSnow Product.
+#From paper, Patterns and Trends of Northern Hemisphere Snow Mass from 1980 to 2018
+
+def ease_grid_globsnow(ds):
+    min_lon = -180
+    min_lat = 35
+    max_lon = 180
+    max_lat = 85
+
+    mask_lon = (ds.lon >= min_lon) & (ds.lon <= max_lon)
+    mask_lat = (ds.lat >= min_lat) & (ds.lat <= max_lat)
+
+    return ds.where(mask_lon & mask_lat, drop=True)
 
 def create_colourmap():
     """
@@ -316,7 +326,7 @@ def create_colourmap():
     return newcmp
 
 
-def plot_values_from_range(start_date, end_date, path):
+def plot_values_from_range(start_date, end_date, region, path):
     """
     A function to create a plot of SWE data given a start and end date. The colorbar goes from blue to white
     for the values of the snow water equivalent going from 0 to 500mm respectively.
@@ -334,6 +344,10 @@ def plot_values_from_range(start_date, end_date, path):
 
     end_date: String which contain the start date in the format 'YYYY-MM-DD'
 
+    region: selecting region of interest:
+        - eurasia, north_america, northern_hemisphere or ease_grid_globsnow
+        - type None if want all the data to be anaylsed
+
     path: directory for the folder of where the snow data is stored.
 
     Returns
@@ -342,17 +356,14 @@ def plot_values_from_range(start_date, end_date, path):
 
     """
     
-    files_from_range = Data_from_range1(start_date, end_date, path)
+    files_from_range = Data_from_range(start_date, end_date, path)
     
     
     #this try block is to stop the code plotting empty graphs where there was not data
-    ds = xr.open_mfdataset(files_from_range)
-
-
-    swe_northernhemisphere = ds.sel(lon=slice(-180,180),lat=slice(20,80))
+    ds = xr.open_mfdataset(files_from_range, preprocess=region)
 
     #resample the data in monthly intervals and calculates the mean for each month.
-    swe_monthly_values = swe_northernhemisphere.swe.resample(time='m').mean()
+    swe_monthly_values = ds.swe.resample(time='m').mean()
     swe_colorbar = create_colourmap()
 
     for month_values in swe_monthly_values:
@@ -379,7 +390,7 @@ def plot_values_from_range(start_date, end_date, path):
                                         )
     
     
-        ax.set_title("Northern Hemisphere Monthly SWE", fontsize=40, fontstyle='italic')
+        ax.set_title("All data", fontsize=40, fontstyle='italic')
         ax.text(s=date, x=-0, y=4500000, fontsize=30, ha='center')
         fig.savefig('D:\\Users\\Reuben\\Internship\\Monthly_Plots\\' + str(date)+'.jpg', bbox_inches='tight')
         #ax.suptitle(date)

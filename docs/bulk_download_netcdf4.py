@@ -3,7 +3,7 @@ import urllib.request
 import requests 
 import numpy as np
 
-def bulk_download(version, start_year, end_year, start_month, end_month):
+def bulk_download(version, start_year, end_year, start_month, end_month, path_name):
     """
     Downloads the ESA Snow CCI onto a local machine with the directory of where this python file is located.
 
@@ -17,7 +17,9 @@ def bulk_download(version, start_year, end_year, start_month, end_month):
 
     start_month: Starting month from which the Snow data will be downloaded from. Must be a month between 1 and 12.
 
-    end_month: Ending month from the which the Snow data will be downloaded to. Must be a month between 1 and 12.
+    end_month: Ending month from which the Snow data will be downloaded to. Must be a month between 1 and 12.
+
+    path_name: String for the path of the folder which you would like the data to be downloaded to.
 
     Returns:
     ----------
@@ -68,7 +70,7 @@ def bulk_download(version, start_year, end_year, start_month, end_month):
                     else:
                         url = 'https://dap.ceda.ac.uk/neodc/esacci/snow/data/swe/MERGED/' + str(version) + '/'+ str(year)+'/'+ str(month) +'/' + str(year) + str(month) + str(day) +'-ESACCI-L3C_SNOW-SWE-SMMR-NIMBUS7-fv2.0.nc'
 
-                    file_path = 'D:\\Users\\Reuben\\Internship\\' + str(year) + str(month) + str(day) + '.nc'
+                    file_path = str(path_name) + str(year) + str(month) + str(day) + '.nc'
                     r = requests.get(url, allow_redirects=True)
                     if r.status_code == 404:
                         continue
