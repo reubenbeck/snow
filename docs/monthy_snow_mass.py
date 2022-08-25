@@ -537,7 +537,7 @@ def create_plot(dict_of_snow_masses):
     ax = fig.add_subplot(111)
 
     #plots monthly march snow masses and 5 year rolling average
-    snow_masses = swe_data_pandas.plot(x='year-month', y='snow mass', kind='scatter', ax = ax)
+    snow_masses = swe_data_pandas.plot.scatter(x='year-month', y='snow mass', ax = ax, s=1000)
     five_year_moving_average = swe_data_pandas.plot(x='year-month', y='5 year moving average', ax= ax)
 
     ax.set_ylabel('Snow Mass (Gt)', fontsize=60)
@@ -579,7 +579,7 @@ def snow_time_series_monthly(start_year, end_year, start_month, end_month, regio
     march_yearly_snow_masses = {}
 
     for year in range(start_year, end_year + 1):
-        for month in range(start_month, end_month):
+        for month in range(start_month, end_month + 1):
 
 
             #gets a list of all the filenames
@@ -601,7 +601,7 @@ def snow_time_series_monthly(start_year, end_year, start_month, end_month, regio
             march_yearly_snow_masses.setdefault('snow mass', []).append(monthly_snow_masses)
             print(monthly_snow_masses)
 
-    #csv_snow_masses = pd.DataFrame(march_yearly_snow_masses).to_csv('D:\\Users\\Reuben\\Internship\\NorthenHemisphere_monthly_snowmasses_datav1.csv')
+    csv_snow_masses = pd.DataFrame(march_yearly_snow_masses).to_csv('D:\\Users\\Reuben\\Internship\\NorthenHemisphere_monthly_snowmasses_datav1.csv')
              
     create_plot(march_yearly_snow_masses)
     
